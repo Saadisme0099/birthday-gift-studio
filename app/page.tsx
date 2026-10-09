@@ -24,6 +24,8 @@ const themes: Record<string,{label:string;main:string;soft:string}> = {
   peach:{label:"Peach glow",main:"#c77d59",soft:"#fff0e6"},
   mint:{label:"Mint wishes",main:"#568c7c",soft:"#e8f4ee"},
 };
+type GiftProject = { id: string; name: string; content: GiftContent };
+const PROJECTS_KEY = "birthday-gift-studio:projects:v1";
 const memoriesKeys = [
   {title:"memory1Title",text:"memory1Text",emoji:"🌷"},
   {title:"memory2Title",text:"memory2Text",emoji:"✨"},
