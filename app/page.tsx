@@ -34,33 +34,63 @@ const memoriesKeys = [
 
 export default function Home() {
   const [gift,setGift] = useState<GiftContent>(defaults);
+  const [projects,setProjects] = useState<GiftProject[]>([]);
+  const [activeProjectId,setActiveProjectId] = useState("");
   const [storageReady,setStorageReady] = useState(false);
-  const [saveState,setSaveState] = useState("Loading your draft…");
+  const [saveState,setSaveState] = useState("Loading projects…");
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem("birthday-gift-studio:draft:v1");
-      if (saved) {
-        const parsed = JSON.parse(saved) as Partial<GiftContent>;
-        setGift({ ...defaults, ...parsed, theme: parsed.theme && themes[parsed.theme] ? parsed.theme : defaults.theme });
-        setSaveState("Draft restored from this device");
+      const raw = window.localStorage.getItem(PROJECTS_KEY);
+      const stored = raw ? JSON.parse(raw) as GiftProject[] : [];
+      if (Array.isArray(stored) && stored.length > 0) {
+        const safe = stored.map(p => ({...p, content:{...defaults,...p.content,theme:p.content?.theme && themes[p.content.theme] ? p.content.theme : defaults.theme}}));
+        setProjects(safe);
+        const preferred = window.localStorage.getItem("birthday-gift-studio:active-project:v1");
+        const active = safe.find(p => p.id === preferred) ?? safe[0];
+        setActiveProjectId(active.id);
+        setGift(active.content);
       } else {
-        setSaveState("Ready to customise");
+        const legacy = window.localStorage.getItem("birthday-gift-studio:draft:v1");
+        const initial = legacy ? {...defaults,...JSON.parse(legacy)} : defaults;
+        const first = {id:"project-"+Date.now(),name:(initial.recipient || "My")+" birthday",content:initial as GiftContent};
+        setProjects([first]); setActiveProjectId(first.id); setGift(first.content);
       }
     } catch {
-      setSaveState("Draft storage unavailable");
-    } finally {
-      setStorageReady(true);
-    }
+      const first = {id:"project-"+Date.now(),name:"My birthday",content:defaults};
+      setProjects([first]); setActiveProjectId(first.id); setGift(defaults);
+      setSaveState("Browser storage unavailable");
+    } finally { setStorageReady(true); }
   }, []);
   useEffect(() => {
-    if (!storageReady) return;
+    if (!storageReady || !activeProjectId) return;
+    setProjects(old => old.map(p => p.id === activeProjectId ? {...p,content:gift} : p));
+  }, [gift,activeProjectId,storageReady]);
+  useEffect(() => {
+    if (!storageReady || !projects.length || !activeProjectId) return;
     try {
-      window.localStorage.setItem("birthday-gift-studio:draft:v1", JSON.stringify(gift));
-      setSaveState("Saved on this device");
-    } catch {
-      setSaveState("Could not save on this device");
-    }
-  }, [gift, storageReady]);
+      window.localStorage.setItem(PROJECTS_KEY,JSON.stringify(projects));
+      window.localStorage.setItem("birthday-gift-studio:active-project:v1",activeProjectId);
+      setSaveState("All projects saved on this device");
+    } catch { setSaveState("Could not save projects on this device"); }
+  }, [projects,activeProjectId,storageReady]);
+  const createProject = () => {
+    const id = "project-"+Date.now();
+    const fresh: GiftContent = {...defaults,recipient:"",sender:"",headline:"A little birthday magic.",intro:"",letter:""};
+    const project: GiftProject = {id,name:"Untitled birthday gift",content:fresh};
+    setProjects(old => [...old,project]); setActiveProjectId(id); setGift(fresh); setPreview(false); setStep(0);
+  };
+  const switchProject = (id:string) => {
+    const project = projects.find(p => p.id === id);
+    if (!project) return;
+    setGift(project.content); setActiveProjectId(id); setPreview(false); setStep(0);
+  };
+  const renameProject = (name:string) => setProjects(old => old.map(p => p.id === activeProjectId ? {...p,name} : p));
+  const deleteProject = () => {
+    if (projects.length <= 1) { setSaveState("Keep at least one project"); return; }
+    const remaining = projects.filter(p => p.id !== activeProjectId);
+    setProjects(remaining); setActiveProjectId(remaining[0].id); setGift(remaining[0].content); setPreview(false); setStep(0);
+  };
+  const update = (key:keyof GiftContent,value:string) => setGift(old => ({...old,[key]:value}));
   const [preview,setPreview] = useState(false);
   const [step,setStep] = useState(0);
   const [letterOpen,setLetterOpen] = useState(false);
