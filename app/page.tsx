@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Eye, Gift, Heart, Palette, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Eye, Gift, Heart, Sparkles } from "lucide-react";
 
 type GiftContent = {
   recipient: string; sender: string; headline: string; intro: string; letter: string;
@@ -38,7 +38,6 @@ export default function Home() {
   const [memory,setMemory] = useState(0);
   const [candles,setCandles] = useState([true,true,true]);
   const [celebrate,setCelebrate] = useState(false);
-  const [copied,setCopied] = useState(false);
   const update = (key:keyof GiftContent,value:string) => setGift(old=>({...old,[key]:value}));
   const startPreview = () => {setStep(0);setPreview(true);setLetterOpen(false);setMemory(0);setCandles([true,true,true]);setCelebrate(false);};
   const reset = () => {setPreview(false);setStep(0);};
