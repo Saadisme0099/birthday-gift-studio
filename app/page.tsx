@@ -130,7 +130,7 @@ export default function Home() {
     setAuthBusy(true); setAuthMessage("");
     try {
       const result = mode === "signup"
-        ? await supabase.auth.signUp({ email: authEmail, password: authPassword })
+        ? await supabase.auth.signUp({ email: authEmail, password: authPassword, options: { emailRedirectTo: window.location.origin } })
         : await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
       if (result.error) setAuthMessage(result.error.message);
       else if (mode === "signup" && !result.data.session) setAuthMessage("Check your email to confirm your account, then sign in.");
