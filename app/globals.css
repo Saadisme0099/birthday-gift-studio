@@ -106,3 +106,24 @@
 .recipient-shell .memory>h3{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;margin:0}
 .recipient-shell .memory>p{font-size:11px;line-height:1.8}
 @media(max-width:480px){.cake-scene{height:205px;transform:scale(.94);margin-top:2px}.birthday-question{padding:10px}.birthday-question button{font-size:9px;padding:9px}.polaroid{width:min(225px,85%)}.polaroid-image{height:165px}}
+
+
+/* Original heart-led opening: romantic, tactile, and cinematic without copying the reference */
+.welcome-gate{min-height:555px;display:flex;flex-direction:column;justify-content:flex-start;background:radial-gradient(ellipse at 50% 38%,#fff3f6 0%,#fffdfb 64%)}
+.heart-gate{min-height:440px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0 0}
+.heart-gate .script{margin:9px 0 3px;font-size:30px}
+.living-heart{position:relative;display:grid;place-items:center;width:138px;height:125px;border:0;background:transparent;color:#d66d91;margin:8px auto 9px;cursor:pointer;isolation:isolate}
+.living-heart:before{content:"";position:absolute;inset:17px 15px 7px;border-radius:50%;background:radial-gradient(circle,#ffe4ec 0%,#f8c8d8 47%,#efb2c8 72%,transparent 73%);filter:blur(2px);z-index:-1}
+.living-heart span{font-size:84px;line-height:1;text-shadow:0 8px 20px #bf5d801c;transform:translateY(-1px)}
+.living-heart i,.living-heart b{position:absolute;color:#d6a0af;font-style:normal;font-weight:400}
+.living-heart i{font-size:23px;right:9px;top:17px}
+.living-heart b{font-size:17px;left:8px;bottom:18px}
+.heart-gate h1{font-size:clamp(36px,7vw,49px);margin-top:7px}
+.heart-gate .copy{margin-top:12px}
+.heart-begin{margin-top:18px}
+.gift-reveal{width:100%}
+.gift-reveal .gift-scene{margin-top:8px}
+.welcome-opened{min-height:555px}
+.welcome-opened .gift-scene{height:205px}
+.recipient-shell .heart-gate .primary{min-width:170px}
+@media(max-width:480px){.welcome-gate,.welcome-opened{min-height:500px}.heart-gate{min-height:390px}.living-heart{transform:scale(.92)}.heart-gate .script{font-size:27px}}
