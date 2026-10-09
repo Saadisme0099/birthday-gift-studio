@@ -74,3 +74,35 @@
 @keyframes envelope-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 @media(max-width:480px){.orbit-one{width:205px}.orbit-two{width:170px;height:135px}.petal-one{left:17%}.petal-two{right:16%}}
 @media(prefers-reduced-motion:reduce){.recipient-shell:before,.recipient-shell:after,.recipient-shell .panel,.gift .lid,.star,.heart,.orbit,.recipient-shell .envelope{animation:none!important}.recipient-shell *{scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+
+/* Longer birthday journey: cake, interactive question balloons, and memory polaroids */
+.cake-panel .script{margin-top:16px}
+.cake-scene{position:relative;height:220px;display:grid;place-items:center;margin:14px auto 0;max-width:340px}
+.cake-glow{position:absolute;width:230px;height:180px;border-radius:50%;background:radial-gradient(ellipse,#f5c9d5a8 0%,#f8e2e800 72%);filter:blur(8px)}
+.cake-scene .cake{z-index:1;transform:scale(1.02);filter:drop-shadow(0 12px 12px #a55f701b)}
+.cake-scene .plate{background:linear-gradient(#fff9f6,#ead1d8);border-bottom-color:#d9b2bf;box-shadow:0 5px 12px #b9687d16}
+.cake-scene .bottom-tier{background:linear-gradient(110deg,#f2bdc9,#eaa6b8 60%,#d98198);box-shadow:inset 0 -6px #cf8194,inset -8px 0 15px #b9677d18}
+.cake-scene .top-tier{background:linear-gradient(110deg,#ffe6e7,#f9d4dc);box-shadow:inset 0 -6px #e8a9b8}
+.cake-scene .icing{box-shadow:0 2px 0 #e9bdc9}
+.cake-scene .candle{position:relative;z-index:4;transition:transform .2s}
+.cake-scene .candle:hover{transform:translateY(-4px)}
+.cake-scene .candle span{height:20px;font-size:17px;filter:drop-shadow(0 0 7px #ffb75e)}
+.cake-scene .candle:not(.lit) span{font-size:20px;text-shadow:none}
+.question-panel{max-width:620px}
+.birthday-questions{display:grid;gap:9px;text-align:left;margin:22px auto 0;max-width:490px}
+.birthday-question{border:1px solid #5c365b;background:linear-gradient(135deg,#25182f,#33203c);border-radius:10px;padding:12px 13px;box-shadow:0 7px 18px #1d102514}
+.birthday-question>p{margin:0 0 9px;color:#fff1f7;font-size:11px;font-weight:600;line-height:1.6}
+.birthday-question>p span{color:#f4a1b8;font-size:9px;letter-spacing:.13em;margin-right:5px}
+.birthday-question>div{display:grid;grid-template-columns:1fr;gap:6px}
+.birthday-question button{border:1px solid #76516e;background:#382540;color:#ead7e6;text-align:left;padding:9px 11px;border-radius:6px;font-size:10px;transition:background .18s,border-color .18s,transform .18s}
+.birthday-question button:hover{transform:translateX(2px);border-color:#f3a2b7}
+.birthday-question button.selected{background:linear-gradient(100deg,#d85d85,#f28b87);border-color:#ffc0cf;color:white;box-shadow:0 5px 14px #ed78952b}
+.polaroid-stack{display:grid;place-items:center;padding:7px 0 18px;perspective:700px}
+.polaroid{width:min(240px,82%);padding:10px 10px 15px;background:#fffdf8;border:1px solid #efe5df;box-shadow:0 12px 26px #5c344014,0 2px 5px #5c34400c}
+.polaroid-image{height:185px;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 35% 28%,#fff4e7,#efc9d2 58%,#b47d91);color:#fff;font-size:55px}
+.polaroid-image img{width:100%;height:100%;object-fit:cover;display:block}
+.polaroid-caption{padding-top:10px;font-family:'Sacramento',cursive;font-size:22px;color:#755661;overflow-wrap:anywhere}
+.recipient-shell .memory>h3{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;margin:0}
+.recipient-shell .memory>p{font-size:11px;line-height:1.8}
+@media(max-width:480px){.cake-scene{height:205px;transform:scale(.94);margin-top:2px}.birthday-question{padding:10px}.birthday-question button{font-size:9px;padding:9px}.polaroid{width:min(225px,85%)}.polaroid-image{height:165px}}
