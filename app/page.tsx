@@ -106,6 +106,11 @@ export default function Home() {
     {!preview ? <>
       <header className="builder-top"><a className="brand" href="#" onClick={e=>{e.preventDefault();setGift(defaults);}}><span>✳</span> little moments studio</a><div className="builder-top-actions"><span className="draft-status"><i/> {saveState}</span><button className="preview-button" onClick={startPreview}><Eye size={15}/> Preview gift</button></div></header>
       <div className="builder-heading"><div className="eyebrow"><Sparkles size={14}/> YOUR IDEA, YOUR GIFT</div><h1>Make it <em>personal.</em></h1><p>Make a birthday page that feels like them. Change the words, choose a vibe, and preview it live.</p></div>
+      <section className="projects-bar">
+        <div className="projects-bar-heading"><div><span className="projects-kicker">YOUR WORKSPACE</span><h2>Your birthday projects</h2></div><button className="new-project-button" onClick={createProject}>＋ New project</button></div>
+        <div className="project-switcher">{projects.map((project,index)=><button key={project.id} className={project.id===activeProjectId?"project-chip active":"project-chip"} onClick={()=>switchProject(project.id)}><span className="project-chip-icon">✳</span><span className="project-chip-copy"><b>{project.name||"Untitled project"}</b><small>{project.content.recipient.trim() ? "For "+project.content.recipient : "Not personalised yet"}</small></span>{project.id===activeProjectId&&<Check size={14}/>}</button>)}</div>
+        <div className="project-management"><label>Project name<input value={projects.find(p=>p.id===activeProjectId)?.name ?? ""} onChange={e=>renameProject(e.target.value)} placeholder="Name this project"/></label><button className="delete-project-button" onClick={deleteProject} disabled={projects.length<=1}>Delete current project</button></div>
+      </section>
       <div className="builder-layout">
         <section className="editor-panel">
           <div className="editor-title"><span className="editor-icon"><Gift size={17}/></span><div><h2>Your birthday gift</h2><p>Make it yours. Every field is editable.</p></div></div>
@@ -123,7 +128,7 @@ export default function Home() {
           <div className="form-section"><div className="form-section-heading"><span>04</span><h3>Your letter</h3></div><label>Write from the heart<textarea rows={6} value={gift.letter} onChange={e=>update("letter",e.target.value)} placeholder="Write a message they can keep..."/></label></div>
           <div className="form-section"><div className="form-section-heading"><span>05</span><h3>Pick a colour mood</h3></div><div className="theme-choices">{Object.entries(themes).map(([key,t])=><button key={key} className={gift.theme===key?"theme-choice active":"theme-choice"} onClick={()=>update("theme",key)}><i style={{background:t.main}}/><span>{t.label}</span>{gift.theme===key&&<Check size={14}/>}</button>)}</div></div>
           <div className="editor-bottom"><button className="reset-button" onClick={()=>setGift(defaults)}>Reset demo content</button><button className="primary" onClick={startPreview}>Preview {gift.recipient.trim()||"your gift"} <ArrowRight size={16}/></button></div>
-          <p className="session-note">Your draft is saved automatically on this device, even after you refresh. Cloud projects and shareable links are coming next.</p>
+          <p className="session-note">Your projects save separately on this device. Cloud sync and shareable links are coming next.</p>
         </section>
         <aside className="live-preview">
           <div className="preview-label"><span><Eye size={14}/> LIVE PREVIEW</span><span className="live-dot">UPDATING</span></div>
