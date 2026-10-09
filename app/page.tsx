@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Eye, Gift, Heart, Sparkles } from "lucide-react";
 
@@ -32,6 +32,33 @@ const memoriesKeys = [
 
 export default function Home() {
   const [gift,setGift] = useState<GiftContent>(defaults);
+  const [storageReady,setStorageReady] = useState(false);
+  const [saveState,setSaveState] = useState("Loading your draft…");
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("birthday-gift-studio:draft:v1");
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<GiftContent>;
+        setGift({ ...defaults, ...parsed, theme: parsed.theme && themes[parsed.theme] ? parsed.theme : defaults.theme });
+        setSaveState("Draft restored from this device");
+      } else {
+        setSaveState("Ready to customise");
+      }
+    } catch {
+      setSaveState("Draft storage unavailable");
+    } finally {
+      setStorageReady(true);
+    }
+  }, []);
+  useEffect(() => {
+    if (!storageReady) return;
+    try {
+      window.localStorage.setItem("birthday-gift-studio:draft:v1", JSON.stringify(gift));
+      setSaveState("Saved on this device");
+    } catch {
+      setSaveState("Could not save on this device");
+    }
+  }, [gift, storageReady]);
   const [preview,setPreview] = useState(false);
   const [step,setStep] = useState(0);
   const [letterOpen,setLetterOpen] = useState(false);
@@ -45,7 +72,7 @@ export default function Home() {
 
   return <main className={preview?"shell recipient-shell":"builder-shell"} style={{"--accent":theme.main,"--soft":theme.soft} as React.CSSProperties}>
     {!preview ? <>
-      <header className="builder-top"><a className="brand" href="#" onClick={e=>{e.preventDefault();setGift(defaults);}}><span>✳</span> little moments studio</a><div className="builder-top-actions"><span className="draft-status"><i/> Draft · saved in this session</span><button className="preview-button" onClick={startPreview}><Eye size={15}/> Preview gift</button></div></header>
+      <header className="builder-top"><a className="brand" href="#" onClick={e=>{e.preventDefault();setGift(defaults);}}><span>✳</span> little moments studio</a><div className="builder-top-actions"><span className="draft-status"><i/> {saveState}</span><button className="preview-button" onClick={startPreview}><Eye size={15}/> Preview gift</button></div></header>
       <div className="builder-heading"><div className="eyebrow"><Sparkles size={14}/> YOUR IDEA, YOUR GIFT</div><h1>Make it <em>personal.</em></h1><p>Make a birthday page that feels like them. Change the words, choose a vibe, and preview it live.</p></div>
       <div className="builder-layout">
         <section className="editor-panel">
@@ -64,7 +91,7 @@ export default function Home() {
           <div className="form-section"><div className="form-section-heading"><span>04</span><h3>Your letter</h3></div><label>Write from the heart<textarea rows={6} value={gift.letter} onChange={e=>update("letter",e.target.value)} placeholder="Write a message they can keep..."/></label></div>
           <div className="form-section"><div className="form-section-heading"><span>05</span><h3>Pick a colour mood</h3></div><div className="theme-choices">{Object.entries(themes).map(([key,t])=><button key={key} className={gift.theme===key?"theme-choice active":"theme-choice"} onClick={()=>update("theme",key)}><i style={{background:t.main}}/><span>{t.label}</span>{gift.theme===key&&<Check size={14}/>}</button>)}</div></div>
           <div className="editor-bottom"><button className="reset-button" onClick={()=>setGift(defaults)}>Reset demo content</button><button className="primary" onClick={startPreview}>Preview {gift.recipient.trim()||"your gift"} <ArrowRight size={16}/></button></div>
-          <p className="session-note">Prototype note: edits currently live in this browser session. Saving projects and publishing unique links is the next build step.</p>
+          <p className="session-note">Your draft is saved automatically on this device, even after you refresh. Cloud projects and shareable links are coming next.</p>
         </section>
         <aside className="live-preview">
           <div className="preview-label"><span><Eye size={14}/> LIVE PREVIEW</span><span className="live-dot">UPDATING</span></div>
