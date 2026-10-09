@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Eye, Gift, Heart, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Eye, Gift, Heart, Sparkles, Cloud, LogIn, LogOut, X } from "lucide-react";
+import { supabase } from "../lib/supabase";
 
 type GiftContent = {
   recipient: string; sender: string; headline: string; intro: string; letter: string;
@@ -38,6 +39,14 @@ export default function Home() {
   const [activeProjectId,setActiveProjectId] = useState("");
   const [storageReady,setStorageReady] = useState(false);
   const [saveState,setSaveState] = useState("Loading projects…");
+  const [userEmail,setUserEmail] = useState<string | null>(null);
+  const [cloudLoadedFor,setCloudLoadedFor] = useState<string | null>(null);
+  const [showAuth,setShowAuth] = useState(false);
+  const [authMode,setAuthMode] = useState<"signin"|"signup">("signin");
+  const [authEmail,setAuthEmail] = useState("");
+  const [authPassword,setAuthPassword] = useState("");
+  const [authBusy,setAuthBusy] = useState(false);
+  const [authMessage,setAuthMessage] = useState("");
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(PROJECTS_KEY);
@@ -61,6 +70,80 @@ export default function Home() {
       setSaveState("Browser storage unavailable");
     } finally { setStorageReady(true); }
   }, []);
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => {
+      setUserEmail(data.session?.user.email ?? null);
+      if (!data.session?.user) setCloudLoadedFor(null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user.email ?? null);
+      if (!session?.user) { setCloudLoadedFor(null); setSaveState("All projects saved on this device"); }
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!supabase || !userEmail) return;
+    let cancelled = false;
+    const loadCloud = async () => {
+      const { data: authData } = await supabase!.auth.getUser();
+      const userId = authData.user?.id;
+      if (!userId) return;
+      const { data, error } = await supabase!.from("gift_projects").select("local_id,name,content").eq("user_id", userId);
+      if (cancelled) return;
+      if (error) { setSaveState("Cloud load failed — local copy is safe"); setAuthMessage(error.message); return; }
+      const cloudProjects: GiftProject[] = (data ?? []).filter(row => row.local_id).map(row => ({
+        id: row.local_id as string, name: row.name,
+        content: { ...defaults, ...(row.content as Partial<GiftContent>), theme: (row.content as Partial<GiftContent>)?.theme && themes[(row.content as Partial<GiftContent>).theme!] ? (row.content as Partial<GiftContent>).theme! : defaults.theme },
+      }));
+      setProjects(local => {
+        const byId = new Map(cloudProjects.map(project => [project.id, project]));
+        local.forEach(project => byId.set(project.id, project));
+        const merged = Array.from(byId.values());
+        try { window.localStorage.setItem(PROJECTS_KEY, JSON.stringify(merged)); } catch {}
+        return merged;
+      });
+      setCloudLoadedFor(userId);
+      setSaveState("Cloud connected · syncing projects");
+    };
+    void loadCloud();
+    return () => { cancelled = true; };
+  }, [userEmail]);
+
+  useEffect(() => {
+    if (!supabase || !userEmail || !cloudLoadedFor || !storageReady || !projects.length) return;
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const { data: authData } = await supabase!.auth.getUser();
+      const userId = authData.user?.id;
+      if (!userId || cancelled) return;
+      const rows = projects.map(project => ({ user_id: userId, local_id: project.id, name: project.name || "Untitled birthday gift", content: project.content, updated_at: new Date().toISOString() }));
+      const { error } = await supabase!.from("gift_projects").upsert(rows, { onConflict: "user_id,local_id" });
+      if (!cancelled) setSaveState(error ? "Cloud sync failed · local copy safe" : "Saved on this device and in the cloud");
+    }, 800);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [projects, userEmail, cloudLoadedFor, storageReady]);
+
+  const handleAuth = async (mode: "signin" | "signup") => {
+    if (!supabase) { setAuthMessage("Supabase environment variables are not configured yet."); return; }
+    setAuthBusy(true); setAuthMessage("");
+    try {
+      const result = mode === "signup"
+        ? await supabase.auth.signUp({ email: authEmail, password: authPassword })
+        : await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+      if (result.error) setAuthMessage(result.error.message);
+      else if (mode === "signup" && !result.data.session) setAuthMessage("Check your email to confirm your account, then sign in.");
+      else { setShowAuth(false); setAuthPassword(""); setAuthMessage(""); }
+    } finally { setAuthBusy(false); }
+  };
+  const handleSignOut = async () => {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    setCloudLoadedFor(null);
+    setSaveState("All projects saved on this device");
+  };
+
   useEffect(() => {
     if (!storageReady || !activeProjectId) return;
     setProjects(old => old.map(p => p.id === activeProjectId ? {...p,content:gift} : p));
@@ -105,8 +188,21 @@ export default function Home() {
 
   return <main className={preview?"shell recipient-shell":"builder-shell"} style={{"--accent":theme.main,"--soft":theme.soft} as React.CSSProperties}>
     {!preview ? <>
-      <header className="builder-top"><a className="brand" href="#" onClick={e=>{e.preventDefault();setGift(defaults);}}><span>✳</span> little moments studio</a><div className="builder-top-actions"><span className="draft-status"><i/> {saveState}</span><button className="preview-button" onClick={startPreview}><Eye size={15}/> Preview gift</button></div></header>
+      <header className="builder-top"><a className="brand" href="#" onClick={e=>{e.preventDefault();setGift(defaults);}}><span>✳</span> little moments studio</a><div className="builder-top-actions"><span className="draft-status"><i/> {saveState}</span>{userEmail ? <button className="preview-button" onClick={handleSignOut}><LogOut size={15}/> Sign out</button> : <button className="preview-button" onClick={()=>{setShowAuth(true);setAuthMessage("");}}><LogIn size={15}/> Sign in</button>}<button className="preview-button" onClick={startPreview}><Eye size={15}/> Preview gift</button></div></header>
       <div className="builder-heading"><div className="eyebrow"><Sparkles size={14}/> YOUR IDEA, YOUR GIFT</div><h1>Make it <em>personal.</em></h1><p>Make a birthday page that feels like them. Change the words, choose a vibe, and preview it live.</p></div>
+      {showAuth && <div role="presentation" onClick={e=>{if(e.target===e.currentTarget)setShowAuth(false);}} style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(48,30,38,.48)",backdropFilter:"blur(8px)",display:"grid",placeItems:"center",padding:20}}>
+        <section role="dialog" aria-modal="true" aria-labelledby="auth-title" style={{width:"min(100%,430px)",background:"#fffaf7",border:"1px solid #f0e5e5",borderRadius:24,padding:26,boxShadow:"0 24px 80px #29121d30",color:"#49343c"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}><div><div className="eyebrow"><Cloud size={14}/> YOUR WORKSPACE, EVERYWHERE</div><h2 id="auth-title" style={{fontFamily:"'Playfair Display',serif",fontSize:28,margin:"8px 0"}}>{authMode==="signin"?"Welcome back":"Save your gifts in the cloud"}</h2></div><button aria-label="Close sign in" onClick={()=>setShowAuth(false)} style={{border:0,background:"transparent",padding:8,cursor:"pointer"}}><X size={20}/></button></div>
+          <p style={{color:"#9a7e87",fontSize:14,lineHeight:1.6}}>Sign in to keep your birthday projects synced across devices. Your existing projects stay saved on this device too.</p>
+          <form onSubmit={e=>{e.preventDefault();void handleAuth(authMode);}} style={{display:"grid",gap:12,marginTop:20}}>
+            <label style={{display:"grid",gap:6,fontSize:13}}>Email address<input type="email" autoComplete="email" required value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="you@example.com" style={{padding:"12px 14px",border:"1px solid #ead9dd",borderRadius:12,background:"white",color:"#49343c"}}/></label>
+            <label style={{display:"grid",gap:6,fontSize:13}}>Password<input type="password" autoComplete={authMode==="signin"?"current-password":"new-password"} minLength={6} required value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="At least 6 characters" style={{padding:"12px 14px",border:"1px solid #ead9dd",borderRadius:12,background:"white",color:"#49343c"}}/></label>
+            <button className="preview-button" type="submit" disabled={authBusy} style={{justifyContent:"center",padding:13,marginTop:4}}>{authBusy?"Please wait…":authMode==="signin"?"Sign in securely":"Create account"}</button>
+          </form>
+          {authMessage && <p role="status" style={{fontSize:13,color:"#a64b63",lineHeight:1.5,overflowWrap:"anywhere"}}>{authMessage}</p>}
+          <p style={{fontSize:13,color:"#9a7e87",textAlign:"center",marginTop:18}}>{authMode==="signin"?"New here? ":"Already have an account? "}<button onClick={()=>{setAuthMode(authMode==="signin"?"signup":"signin");setAuthMessage("");}} style={{border:0,background:"transparent",color:"#b9687d",fontWeight:700,cursor:"pointer"}}>{authMode==="signin"?"Create an account":"Sign in"}</button></p>
+        </section>
+      </div>}
       <section className="projects-bar">
         <div className="projects-bar-heading"><div><span className="projects-kicker">YOUR WORKSPACE</span><h2>Your birthday projects</h2></div><button className="new-project-button" onClick={createProject}>＋ New project</button></div>
         <div className="project-switcher">{projects.map((project,index)=><button key={project.id} className={project.id===activeProjectId?"project-chip active":"project-chip"} onClick={()=>switchProject(project.id)}><span className="project-chip-icon">✳</span><span className="project-chip-copy"><b>{project.name||"Untitled project"}</b><small>{project.content.recipient.trim() ? "For "+project.content.recipient : "Not personalised yet"}</small></span>{project.id===activeProjectId&&<Check size={14}/>}</button>)}</div>
